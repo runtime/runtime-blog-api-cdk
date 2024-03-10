@@ -16,13 +16,13 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
 
     // create a lambda function that access the dynamodb table above and has permissions to read, write, update and delete
 
-    const lambdaRuntimeBlogAPIFunction = new lambda.Function(this, 'lambda_function', {
+    const lambdaRuntimeBlogAPIFunction = new lambda.Function(this, 'runtimeAPILambdaFunc', {
       runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset('src/lambda_function'),
-      handler: 'lambda.handler',
+      code: lambda.Code.fromAsset('functions'),
+      handler: 'function.handler',
       environment: {
         DDB_TABLE_NAME: runtimeBlogDB.tableName
-      },
+      }
     });
 
     // create permissions for the lambda function to access the dynamo table
