@@ -54,7 +54,6 @@ run locally and/or deploy to aws
 * `npm run watch`   watch for changes and compile
 * `npm run test`    perform the jest unit tests
 
-* `cdk synth`   creates the IaC template.yaml
 * `cdk bootstap` allows you to authenticate if you don't already have a .aws/credentials
 * `cdk deploy`  deploy this stack to your default AWS account/region
 * `cdk diff`    compare deployed stack with current state
