@@ -18,7 +18,7 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
 
     const lambdaRuntimeBlogAPIFunction = new lambda.Function(this, 'lambdaRBAPIFunc', {
       runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset('lambda'),
+      code: lambda.Code.fromAsset('src/lambda'),
       handler: 'lambda.handler',
       environment: {
         DDB_TABLE_NAME: runtimeBlogDB.tableName
