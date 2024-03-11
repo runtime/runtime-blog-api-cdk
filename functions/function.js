@@ -1,10 +1,8 @@
+const AWS = require('aws-sdk');
+AWS.config.update({region: 'us-east-1'});
 
-// const aws = new aws()
-// aws.config.update({
-//     region: "us-east-1"
-// });
-
-const dynamodb = new aws.DynamoDB.DocumentClient();
+// create a new aws dynamodb document client
+const dynamodb = new AWS.DynamoDB.DocumentClient();
 const dynamodbTableName = "runtimeBlogCaseStudies";
 const itemsPath = "/items";
 const itemPath = "/items/{id}";
