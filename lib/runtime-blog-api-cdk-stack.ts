@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
+import * as iam from 'aws-cdk-lib/aws-iam';
 
 export class RuntimeBlogApiCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -14,19 +15,29 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
       partitionKey: {name: 'itemId', type: dynamodb.AttributeType.STRING},
     });
 
+    var params = {
+      PolicyArn: 'arn:aws:iam::926079816406:policy/lambda-apigateway-policy'
+    }
+
+
+
+
     // create a lambda function that access the dynamodb table above and has permissions to read, write, update and delete
 
     const lambdaRuntimeBlogAPIFunction = new lambda.Function(this, 'runtimeAPILambdaFunc', {
       runtime: lambda.Runtime.NODEJS_20_X,
       code: lambda.Code.fromAsset('functions'),
       handler: 'function.handler',
+      // role: iam.Role.fromRoleArn(this, 'lambda-apigateway-policy', 'arn:aws:iam::926079816406:policy/lambda-apigateway-policy'),
       environment: {
         DDB_TABLE_NAME: runtimeBlogDB.tableName
       }
     });
 
-    // create permissions for the lambda function to access the dynamo table
-    runtimeBlogDB.grantReadWriteData(lambdaRuntimeBlogAPIFunction);
+    //lambdaRuntimeBlogAPIFunction.addToRolePolicy(lambdaDynamoDBPolicy);
+
+    //runtimeBlogDB.grantReadWriteData(lambdaRuntimeBlogAPIFunction);
+    runtimeBlogDB.grantFullAccess(lambdaRuntimeBlogAPIFunction)
 
     // create an api gateway that uses the lambda handler above as a method to GET and GET by itemId
     const runtimeBlogAPIg = new apigw.RestApi(this, 'RuntimeBlogAPI-CDK');
@@ -39,6 +50,10 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
     runtimeBlogAPIg.root
         .resourceForPath('items/{itemId}')
         .addMethod('GET', new apigw.LambdaIntegration(lambdaRuntimeBlogAPIFunction));
+
+    runtimeBlogAPIg.root
+        .resourceForPath('hello')
+        .addMethod('POST', new apigw.LambdaIntegration(lambdaRuntimeBlogAPIFunction));
 
     new cdk.CfnOutput(this, 'HTTP API Url', {
       value: runtimeBlogAPIg.url ?? 'Something went wrong with the deploy'
