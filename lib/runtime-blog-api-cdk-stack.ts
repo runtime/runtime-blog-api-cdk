@@ -15,13 +15,6 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
       partitionKey: {name: 'itemId', type: dynamodb.AttributeType.STRING},
     });
 
-    var params = {
-      PolicyArn: 'arn:aws:iam::926079816406:policy/lambda-apigateway-policy'
-    }
-
-
-
-
     // create a lambda function that access the dynamodb table above and has permissions to read, write, update and delete
 
     const lambdaRuntimeBlogAPIFunction = new lambda.Function(this, 'runtimeAPILambdaFunc', {
@@ -34,10 +27,12 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
       }
     });
 
-    //lambdaRuntimeBlogAPIFunction.addToRolePolicy(lambdaDynamoDBPolicy);
+    lambdaRuntimeBlogAPIFunction.role?.addManagedPolicy(
+        iam.ManagedPolicy.fromAwsManagedPolicyName('lambda-apigateway-policy')
+    )
 
     //runtimeBlogDB.grantReadWriteData(lambdaRuntimeBlogAPIFunction);
-    runtimeBlogDB.grantFullAccess(lambdaRuntimeBlogAPIFunction)
+    runtimeBlogDB.grantReadWriteData(lambdaRuntimeBlogAPIFunction)
 
     // create an api gateway that uses the lambda handler above as a method to GET and GET by itemId
     const runtimeBlogAPIg = new apigw.RestApi(this, 'RuntimeBlogAPI-CDK');
