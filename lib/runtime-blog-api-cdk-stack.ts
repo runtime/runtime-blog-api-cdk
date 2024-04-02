@@ -58,10 +58,9 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
 
     // new
     const lambdaRTBFunction = new NodejsFunction(this, 'lambdaRuntimeBlogAPIFunction', {
-        entry: join(__dirname, 'functions', 'lambdaHandler.ts'),
+      entry: join(__dirname, 'functions', 'lambdaHandler.ts'),
       ...nodejsFunctionProps,
-    };
-
+    });
 
     // const lambdaRuntimeBlogAPIFunction.role?.addManagedPolicy(
     //     //iam.ManagedPolicy.fromAwsManagedPolicyName('lambda-apigateway-policy')
