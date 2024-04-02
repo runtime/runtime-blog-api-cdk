@@ -62,49 +62,34 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
       ...nodejsFunctionProps,
     });
 
+    // old policy attachment. revisit.
+
     // const lambdaRuntimeBlogAPIFunction.role?.addManagedPolicy(
     //     //iam.ManagedPolicy.fromAwsManagedPolicyName('lambda-apigateway-policy')
     // )
+
   // attach read write policy
     //runtimeBlogDB.grantReadWriteData(lambdaRuntimeBlogAPIFunction)
     runtimeBlogDB.grantReadWriteData(lambdaRTBFunction);
 
+    // if you were to add more lambdas
+    // runtimeBlogDB.grantReadWriteData(getOneLambda);
+    // runtimeBlogDB.grantReadWriteData(createOneLambda);
+    // runtimeBlogDB.grantReadWriteData(updateOneLambda);
+    // runtimeBlogDB.grantReadWriteData(deleteOneLambda);
+
     // integrate lambda functions with the api gateway resource
     const lambdaFunctionIntegration = new api.LambdaIntegration(lambdaRTBFunction);
 
-    // const helloLambda = new lambda.Function(this, 'helloLambda', {
-    //   runtime: lambda.Runtime.NODEJS_20_X,
-    //   code: lambda.Code.fromAsset('functions'),
-    //   handler: 'hello.handler',
-    // }
 
     // create an api gateway that uses the lambda handler above as a method to GET and GET by itemId
     const runtimeBlogAPI = new api.RestApi(this, 'rtbAPI', {
-      restApiName: 'Items Service'
+      restApiName: 'rtb-items-service'
       // if you want to manage binary types, uncomment the following
       // binaryMediaTypes; ["*/*"],
     });
 
     //routes
-
-    // const items = runtimeBlogAPI.root.addResource('items');
-    // items.addMethod('POST', lambdaFunctionIntegration);
-    // addCorsOptions(items);
-
-
-    // const items = runtimeBlogAPI.root.addResource('items');
-    // items.addMethod('GET', lambdaFunctionIntegration);
-    // addCorsOptions(items);
-    //
-    //
-    // const items = api.root.addResource('items');
-    // items.addMethod('PUT', lambdaFunctionIntegration);
-    // addCorsOptions(items);
-    //
-    //
-    // const items = api.root.addResource('items');
-    // items.addMethod('DELETE', lambdaFunctionIntegration);
-    // addCorsOptions(items);
 
 
     const items = runtimeBlogAPI.root.addResource('items');
@@ -115,8 +100,6 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
     const singleItem = items.addResource('{itemId}')
     items.addMethod('GET', lambdaFunctionIntegration);
     addCorsOptions(singleItem);
-
-
 
 
     // const item = items.addResource('{itemId}
@@ -131,7 +114,7 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
     // runtimeBlogAPI.root
     //     .resourceForPath('hello')
     //     .addMethod('POST', new api.LambdaIntegration(lambdaRuntimeBlogAPIFunction));
-    export function addCorsOptions(apiResource: IResource) {
+    let addCors = function addCorsOptions(apiResource: IResource) {
       apiResource.addMethod('OPTIONS', new MockIntegration({
         // In case you want to use binary media types, uncomment the following line
         // contentHandling: ContentHandling.CONVERT_TO_TEXT,
