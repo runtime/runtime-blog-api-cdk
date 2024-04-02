@@ -87,13 +87,36 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
     });
 
     //routes
-    const items = api.root.addResource('items');
+
+    // const items = runtimeBlogAPI.root.addResource('items');
+    // items.addMethod('POST', lambdaFunctionIntegration);
+    // addCorsOptions(items);
+
+
+    // const items = runtimeBlogAPI.root.addResource('items');
+    // items.addMethod('GET', lambdaFunctionIntegration);
+    // addCorsOptions(items);
+    //
+    //
+    // const items = api.root.addResource('items');
+    // items.addMethod('PUT', lambdaFunctionIntegration);
+    // addCorsOptions(items);
+    //
+    //
+    // const items = api.root.addResource('items');
+    // items.addMethod('DELETE', lambdaFunctionIntegration);
+    // addCorsOptions(items);
+
+
+    const items = runtimeBlogAPI.root.addResource('items');
     items.addMethod('GET', lambdaFunctionIntegration);
     addCorsOptions(items);
 
-    const singleItem = items.addResource('{itemId}');
-    singleItem.addMethod('GET', lambdaFunctionIntegration);
+
+    const singleItem = items.addResource('{itemId}')
+    items.addMethod('GET', lambdaFunctionIntegration);
     addCorsOptions(singleItem);
+
 
 
 
