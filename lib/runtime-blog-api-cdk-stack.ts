@@ -4,6 +4,7 @@ import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as api from 'aws-cdk-lib/aws-apigateway';
+import * as iam from 'aws-cdk-lib/aws-iam';
 
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { App, Stack, RemovalPolicy } from 'aws-cdk-lib';
@@ -34,39 +35,39 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
             'aws-sdk',
           ],
         },
-        depsLockFilePath: join(__dirname, 'lambdas', 'package-lock.json'),
+        depsLockFilePath: join(__dirname, 'functions', 'package-lock.json'),
           environment: {
           PRIMARY_KEY: 'itemId',
           TABLE_NAME:runtimeBlogDB.tableName,
     },
-    runtime: Runtime.NODEJS_20_X,
+    runtime: Runtime.NODEJS_16_X,
 
   }
     // create a lambda function that access the dynamodb table above and has permissions to read, write, update and delete
       // old
 
-    const lambdaRTBFunction = new lambda.Function(this, 'rtbLambdaFunc', {
-      runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset('functions'),
-      handler: 'function.handler',
-      // role: iam.Role.fromRoleArn(this, 'lambda-apigateway-policy', 'arn:aws:iam::926079816406:policy/lambda-apigateway-policy'),
-      environment: {
-        DDB_TABLE_NAME: runtimeBlogDB.tableName
-      }
-    });
+    // const lambdaRTBFunction = new lambda.Function(this, 'rtbLambdaFunc', {
+    //   runtime: lambda.Runtime.NODEJS_16_X,
+    //   code: lambda.Code.fromAsset('functions'),
+    //   handler: 'function.handler',
+    //   role: iam.Role.fromRoleArn(this, 'lambda-apigateway-policy', 'arn:aws:iam::926079816406:policy/lambda-apigateway-policy'),
+    //   environment: {
+    //     DDB_TABLE_NAME: runtimeBlogDB.tableName
+    //   }
+    // });
 
 
     // new
-    // const lambdaRTBFunction = new NodejsFunction(this, 'handler', {
-    //   entry: join(__dirname, 'lambdas', 'lambdaHandler.ts'),
-    //   ...nodejsFunctionProps,
-    // });
+    const lambdaRTBFunction = new NodejsFunction(this, 'handler', {
+      entry: join(__dirname, 'functions', 'lambdaHandler.ts'),
+      ...nodejsFunctionProps,
+    });
 
     // old policy attachment. revisit.
 
-    // const lambdaRuntimeBlogAPIFunction.role?.addManagedPolicy(
-    //     //iam.ManagedPolicy.fromAwsManagedPolicyName('lambda-apigateway-policy')
-    // )
+    lambdaRTBFunction.role?.addManagedPolicy(
+         iam.ManagedPolicy.fromAwsManagedPolicyName('lambda-apigateway-policy')
+     )
 
   // attach read write policy
     //runtimeBlogDB.grantReadWriteData(lambdaRuntimeBlogAPIFunction)

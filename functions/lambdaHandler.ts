@@ -3,7 +3,7 @@ AWS.config.update({region: 'us-east-1'});
 
 // create a new aws dynamodb document client
 const dynamodb = new AWS.DynamoDB.DocumentClient();
-const dynamodbTableName = "runtimeBlogCaseStudies";
+const dynamodbTableName = "rtb-case-studies";
 const itemsPath = "/items";
 const itemPath = "/items/{id}";
 const helloapi = "/hello";
