@@ -9,7 +9,9 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { App, Stack, RemovalPolicy } from 'aws-cdk-lib';
 import { NodejsFunction, NodejsFunctionProps } from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as path from "node:path";
 import { join } from 'path'
+
 
 
 
@@ -35,7 +37,7 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
             'aws-sdk',
           ],
         },
-        depsLockFilePath: join(__dirname, 'functions', 'package-lock.json'),
+        depsLockFilePath: join(__dirname, '../package-lock.json'),
           environment: {
           PRIMARY_KEY: 'itemId',
           TABLE_NAME:runtimeBlogDB.tableName,
@@ -49,7 +51,7 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
     // const lambdaRTBFunction = new lambda.Function(this, 'rtbLambdaFunc', {
     //   runtime: lambda.Runtime.NODEJS_16_X,
     //   code: lambda.Code.fromAsset('functions'),
-    //   handler: 'function.handler',
+    //   handler: 'function.lambdaHandler',
     //   role: iam.Role.fromRoleArn(this, 'lambda-apigateway-policy', 'arn:aws:iam::926079816406:policy/lambda-apigateway-policy'),
     //   environment: {
     //     DDB_TABLE_NAME: runtimeBlogDB.tableName
@@ -57,13 +59,13 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
     // });
 
 
-    // new
+    //new
     const lambdaRTBFunction = new NodejsFunction(this, 'handler', {
-      entry: join(__dirname, 'functions', 'lambdaHandler.ts'),
+      entry: join(__dirname, '../functions', 'lambdaHandler.js'),
       ...nodejsFunctionProps,
     });
 
-    // old policy attachment. revisit.
+   // old policy attachment. revisit.
 
     lambdaRTBFunction.role?.addManagedPolicy(
          iam.ManagedPolicy.fromAwsManagedPolicyName('lambda-apigateway-policy')
