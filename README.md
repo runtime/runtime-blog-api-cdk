@@ -60,3 +60,7 @@ run locally and/or deploy to aws
 * `cdk synth`   emits the synthesized CloudFormation template
 
 
+## note
+# lambdaFunction is named index.js
+
+# getById needs to be id

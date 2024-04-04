@@ -27,6 +27,7 @@ exports.handler = async function (event) {
             break;
         case event.httpMethod === 'GET' && event.path === itemPath:
             response = await getItem(event.pathParameters.id);
+            console.log('event.pathParameters.id : ', event.pathParameters.id, 'response: ', response);
             break;
         case event.httpMethod === 'POST' && event.path === helloapi:
             response = await hello();
@@ -53,7 +54,7 @@ async function getItem(id) {
     const params = {
         TableName: dynamodbTableName,
         Key: {
-            'itemId': {id}
+            "id": 1
         }
     }
     return  dynamodb.get(params).promise().then(response => {

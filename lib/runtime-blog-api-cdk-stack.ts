@@ -67,9 +67,9 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
 
    // old policy attachment. revisit.
 
-    lambdaRTBFunction.role?.addManagedPolicy(
-         iam.ManagedPolicy.fromAwsManagedPolicyName('lambda-apigateway-policy')
-     )
+    // lambdaRTBFunction.role?.addManagedPolicy(
+    //      iam.ManagedPolicy.fromAwsManagedPolicyName('lambda-apigateway-policy')
+    //  )
 
   // attach read write policy
     //runtimeBlogDB.grantReadWriteData(lambdaRuntimeBlogAPIFunction)
@@ -100,9 +100,13 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
     addCorsOptions(items);
 
 
-    const singleItem = items.addResource('{itemId}')
+    const singleItem = items.addResource('{id}')
     singleItem.addMethod('GET', lambdaFunctionIntegration);
     addCorsOptions(singleItem);
+
+    const helloApi = runtimeBlogAPI.root.addResource('hello');
+    items.addMethod('POST', lambdaFunctionIntegration);
+    addCorsOptions(helloApi);
 
 
     // const item = items.addResource('{itemId}
