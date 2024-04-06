@@ -105,7 +105,7 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
     addCorsOptions(singleItem);
 
     const helloApi = runtimeBlogAPI.root.addResource('hello');
-    items.addMethod('POST', lambdaFunctionIntegration);
+    helloApi.addMethod('POST', lambdaFunctionIntegration);
     addCorsOptions(helloApi);
 
 

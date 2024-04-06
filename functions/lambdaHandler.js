@@ -9,25 +9,23 @@ const itemPath = "/items/{id}";
 const helloapi = "/hello";
 
 
-//create a new dynamodb document client
-//const dynamodb = new AWS.DynamoDB.DocumentClient();
-//const dynamodbTableName = "runtimeBlogCaseStudies";
-
-
 exports.handler = async function (event) {
-    console.log('request event: ',  event);
+    // console.log('request event: ',  event);
+    // console.log('event.httpMethod: ', event.httpMethod);
+    // console.log('event.path: ', event.path);
+    // console.log('event.resource: ', event.resource);
+
     let response;
-    console.log('event.httpMethod: ', event.httpMethod);
-    console.log('event.path: ', event.path);
-    // //true allows && without references
+
     switch (true) {
+
         case event.httpMethod === 'GET' && event.path === itemsPath:
+            //console.log('switch(items) : ', event.path === itemsPath);
             response = await getItems();
-            console.log('event.httpMethod response : ', response);
             break;
-        case event.httpMethod === 'GET' && event.path === itemPath:
+        case event.httpMethod === 'GET' && event.resource === itemPath:
+            //console.log('switch(item): ', event.pathParameters.id);
             response = await getItem(event.pathParameters.id);
-            console.log('event.pathParameters.id : ', event.pathParameters.id, 'response: ', response);
             break;
         case event.httpMethod === 'POST' && event.path === helloapi:
             response = await hello();
@@ -47,18 +45,19 @@ async function getItems() {
     const allItems = await dynamodb.scan(params).promise()
     console.log('allItems: ', allItems);
     return allItems;
-    //buildResponse(200, {allItems.Items})
 }
 
 async function getItem(id) {
+
     const params = {
         TableName: dynamodbTableName,
-        Key: {
-            "id": 1
-        }
+        Key: {'itemId': id}
     }
     return  dynamodb.get(params).promise().then(response => {
-            return buildResponse(200, response.Item);
+            //console.log('dynamodb.get(params): ', params.Key)
+            let res = response.Item;
+            //console.log('res', res)
+            return res;
         },
         (error) => {
             console.error('error: ', error);
@@ -70,14 +69,16 @@ async function hello() {
 }
 
 
-
-
 const buildResponse = (statusCode, body) => {
     return {
         statusCode: statusCode,
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+            "Access-Control-Allow-Methods": "GET,PUT,OPTIONS",
+            "Access-Control-Allow-Origin": "*",
         },
+
         body: JSON.stringify(body)
     }
 }
