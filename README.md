@@ -1,7 +1,7 @@
 # AWS IaC CDK Serverless api 
 ## Serverless api in typescript for a cms to serve use cases
 
-This is being used for AWS CDK IaC deployment
+Setting up a blog with a Serverless API built using AWS Infrastructure as Code, AWS JS SDK and AWS CDK
 
 The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
@@ -12,7 +12,7 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
 -nvm [ensure correct version of node]
 
-`Nvm install 20.11.0` 
+`Nvm install 20.11.0`
 
 `Nvm use 20.11.0`
 
@@ -21,7 +21,7 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 -npm [installs npx since 5.0]
 
 
-## USE
+## CLone and Code
 -clone repository 
 
 -cd into repository 
@@ -60,3 +60,9 @@ run locally and/or deploy to aws
 * `cdk synth`   emits the synthesized CloudFormation template
 
 
+## USE
+####  stages
+Prod
+default
+
+API currently only supports GET items and GET item/id

@@ -1,8 +1,19 @@
 import * as cdk from 'aws-cdk-lib';
+import { IResource, LambdaIntegration, MockIntegration, PassthroughBehavior, RestApi } from 'aws-cdk-lib/aws-apigateway';
 import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import * as apigw from 'aws-cdk-lib/aws-apigateway';
+import * as api from 'aws-cdk-lib/aws-apigateway';
+import * as iam from 'aws-cdk-lib/aws-iam';
+
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { App, Stack, RemovalPolicy } from 'aws-cdk-lib';
+import { NodejsFunction, NodejsFunctionProps } from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as path from "node:path";
+import { join } from 'path'
+
+
+
 
 export class RuntimeBlogApiCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -10,42 +21,144 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
 
     //create a dynamo db table with a table definition for aws lambda access
     // noted items id is the name of the table so this should have been runtime blog
-    const runtimeBlogDB = new dynamodb.Table(this, 'runtimeBlogCaseStudies', {
-      partitionKey: {name: 'itemId', type: dynamodb.AttributeType.STRING},
+    const runtimeBlogDB = new dynamodb.Table(this, 'items', {
+      partitionKey: {
+        name: 'itemId',
+        type: dynamodb.AttributeType.STRING
+      },
+      tableName: 'rtb-case-studies',
+      removalPolicy: RemovalPolicy.DESTROY, // change for production to preserve db
     });
 
+
+    const nodejsFunctionProps: NodejsFunctionProps = {
+        bundling: {
+          externalModules: [
+            'aws-sdk',
+          ],
+        },
+        depsLockFilePath: join(__dirname, '../package-lock.json'),
+          environment: {
+          PRIMARY_KEY: 'itemId',
+          TABLE_NAME:runtimeBlogDB.tableName,
+    },
+    runtime: Runtime.NODEJS_16_X,
+
+  }
     // create a lambda function that access the dynamodb table above and has permissions to read, write, update and delete
+      // old
 
-    const lambdaRuntimeBlogAPIFunction = new lambda.Function(this, 'runtimeAPILambdaFunc', {
-      runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset('functions'),
-      handler: 'function.handler',
-      environment: {
-        DDB_TABLE_NAME: runtimeBlogDB.tableName
-      }
+    // const lambdaRTBFunction = new lambda.Function(this, 'rtbLambdaFunc', {
+    //   runtime: lambda.Runtime.NODEJS_16_X,
+    //   code: lambda.Code.fromAsset('functions'),
+    //   handler: 'function.lambdaHandler',
+    //   role: iam.Role.fromRoleArn(this, 'lambda-apigateway-policy', 'arn:aws:iam::926079816406:policy/lambda-apigateway-policy'),
+    //   environment: {
+    //     DDB_TABLE_NAME: runtimeBlogDB.tableName
+    //   }
+    // });
+
+
+    //new
+    const lambdaRTBFunction = new NodejsFunction(this, 'handler', {
+      entry: join(__dirname, '../functions', 'lambdaHandler.js'),
+      ...nodejsFunctionProps,
     });
 
-    // create permissions for the lambda function to access the dynamo table
-    runtimeBlogDB.grantReadWriteData(lambdaRuntimeBlogAPIFunction);
+   // old policy attachment. revisit.
+
+    // lambdaRTBFunction.role?.addManagedPolicy(
+    //      iam.ManagedPolicy.fromAwsManagedPolicyName('lambda-apigateway-policy')
+    //  )
+
+  // attach read write policy
+    //runtimeBlogDB.grantReadWriteData(lambdaRuntimeBlogAPIFunction)
+    runtimeBlogDB.grantReadWriteData(lambdaRTBFunction);
+
+    // if you were to add more lambdas
+    // runtimeBlogDB.grantReadWriteData(getOneLambda);
+    // runtimeBlogDB.grantReadWriteData(createOneLambda);
+    // runtimeBlogDB.grantReadWriteData(updateOneLambda);
+    // runtimeBlogDB.grantReadWriteData(deleteOneLambda);
+
+    // integrate lambda functions with the api gateway resource
+    const lambdaFunctionIntegration = new api.LambdaIntegration(lambdaRTBFunction);
+
 
     // create an api gateway that uses the lambda handler above as a method to GET and GET by itemId
-    const runtimeBlogAPIg = new apigw.RestApi(this, 'RuntimeBlogAPI-CDK');
+    const runtimeBlogAPI = new api.RestApi(this, 'rtbAPI', {
+      restApiName: 'rtb-items-service'
+      // if you want to manage binary types, uncomment the following
+      // binaryMediaTypes; ["*/*"],
+    });
 
     //routes
-    runtimeBlogAPIg.root
-        .resourceForPath('items')
-        .addMethod('GET', new apigw.LambdaIntegration(lambdaRuntimeBlogAPIFunction));
 
-    runtimeBlogAPIg.root
-        .resourceForPath('items/{itemId}')
-        .addMethod('GET', new apigw.LambdaIntegration(lambdaRuntimeBlogAPIFunction));
+
+    const items = runtimeBlogAPI.root.addResource('items');
+    items.addMethod('GET', lambdaFunctionIntegration);
+    addCorsOptions(items);
+
+
+    const singleItem = items.addResource('{id}')
+    singleItem.addMethod('GET', lambdaFunctionIntegration);
+    addCorsOptions(singleItem);
+
+    const helloApi = runtimeBlogAPI.root.addResource('hello');
+    helloApi.addMethod('POST', lambdaFunctionIntegration);
+    addCorsOptions(helloApi);
+
+
+    // const item = items.addResource('{itemId}
+    // runtimeBlogAPI.root
+    //     .resourceForPath('items')
+    //     .addMethod('GET', new api.LambdaIntegration(lambdaRuntimeBlogAPIFunction));
+    //
+    // runtimeBlogAPI.root
+    //     .resourceForPath('items/{itemId}')
+    //     .addMethod('GET', new api.LambdaIntegration(lambdaRuntimeBlogAPIFunction));
+    //
+    // runtimeBlogAPI.root
+    //     .resourceForPath('hello')
+    //     .addMethod('POST', new api.LambdaIntegration(lambdaRuntimeBlogAPIFunction));
 
     new cdk.CfnOutput(this, 'HTTP API Url', {
-      value: runtimeBlogAPIg.url ?? 'Something went wrong with the deploy'
+      value: runtimeBlogAPI.url ?? 'Something went wrong with the deploy'
     });
 
 
   }
+}
+
+export function addCorsOptions(apiResource: IResource) {
+  apiResource.addMethod('OPTIONS', new MockIntegration({
+    // In case you want to use binary media types, uncomment the following line
+    // contentHandling: ContentHandling.CONVERT_TO_TEXT,
+    integrationResponses: [{
+      statusCode: '200',
+      responseParameters: {
+        'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        'method.response.header.Access-Control-Allow-Origin': "'*'",
+        'method.response.header.Access-Control-Allow-Credentials': "'false'",
+        'method.response.header.Access-Control-Allow-Methods': "'OPTIONS,GET,PUT,POST,DELETE'",
+      },
+    }],
+    // In case you want to use binary media types, comment out the following line
+    passthroughBehavior: PassthroughBehavior.NEVER,
+    requestTemplates: {
+      "application/json": "{\"statusCode\": 200}"
+    },
+  }), {
+    methodResponses: [{
+      statusCode: '200',
+      responseParameters: {
+        'method.response.header.Access-Control-Allow-Headers': true,
+        'method.response.header.Access-Control-Allow-Methods': true,
+        'method.response.header.Access-Control-Allow-Credentials': true,
+        'method.response.header.Access-Control-Allow-Origin': true,
+      },
+    }]
+  })
 }
 
 
