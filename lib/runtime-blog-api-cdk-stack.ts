@@ -1,19 +1,12 @@
 import * as cdk from 'aws-cdk-lib';
 import { IResource, LambdaIntegration, MockIntegration, PassthroughBehavior, RestApi } from 'aws-cdk-lib/aws-apigateway';
 import { Construct } from 'constructs';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as api from 'aws-cdk-lib/aws-apigateway';
-import * as iam from 'aws-cdk-lib/aws-iam';
-
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { App, Stack, RemovalPolicy } from 'aws-cdk-lib';
 import { NodejsFunction, NodejsFunctionProps } from 'aws-cdk-lib/aws-lambda-nodejs';
-import * as path from "node:path";
 import { join } from 'path'
-
-
-
 
 export class RuntimeBlogApiCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -30,7 +23,6 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
       removalPolicy: RemovalPolicy.DESTROY, // change for production to preserve db
     });
 
-
     const nodejsFunctionProps: NodejsFunctionProps = {
         bundling: {
           externalModules: [
@@ -43,39 +35,18 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
           TABLE_NAME:runtimeBlogDB.tableName,
     },
     runtime: Runtime.NODEJS_16_X,
-
   }
     // create a lambda function that access the dynamodb table above and has permissions to read, write, update and delete
-      // old
-
-    // const lambdaRTBFunction = new lambda.Function(this, 'rtbLambdaFunc', {
-    //   runtime: lambda.Runtime.NODEJS_16_X,
-    //   code: lambda.Code.fromAsset('functions'),
-    //   handler: 'function.lambdaHandler',
-    //   role: iam.Role.fromRoleArn(this, 'lambda-apigateway-policy', 'arn:aws:iam::926079816406:policy/lambda-apigateway-policy'),
-    //   environment: {
-    //     DDB_TABLE_NAME: runtimeBlogDB.tableName
-    //   }
-    // });
-
-
-    //new
     const lambdaRTBFunction = new NodejsFunction(this, 'handler', {
       entry: join(__dirname, '../functions', 'lambdaHandler.js'),
       ...nodejsFunctionProps,
     });
 
-   // old policy attachment. revisit.
-
-    // lambdaRTBFunction.role?.addManagedPolicy(
-    //      iam.ManagedPolicy.fromAwsManagedPolicyName('lambda-apigateway-policy')
-    //  )
-
   // attach read write policy
-    //runtimeBlogDB.grantReadWriteData(lambdaRuntimeBlogAPIFunction)
+    // one handler
     runtimeBlogDB.grantReadWriteData(lambdaRTBFunction);
 
-    // if you were to add more lambdas
+    // add more lambdas to decouple tasks
     // runtimeBlogDB.grantReadWriteData(getOneLambda);
     // runtimeBlogDB.grantReadWriteData(createOneLambda);
     // runtimeBlogDB.grantReadWriteData(updateOneLambda);
@@ -84,7 +55,6 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
     // integrate lambda functions with the api gateway resource
     const lambdaFunctionIntegration = new api.LambdaIntegration(lambdaRTBFunction);
 
-
     // create an api gateway that uses the lambda handler above as a method to GET and GET by itemId
     const runtimeBlogAPI = new api.RestApi(this, 'rtbAPI', {
       restApiName: 'rtb-items-service'
@@ -92,13 +62,10 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
       // binaryMediaTypes; ["*/*"],
     });
 
-    //routes
-
-
+    //attach the integration(s) to the api
     const items = runtimeBlogAPI.root.addResource('items');
     items.addMethod('GET', lambdaFunctionIntegration);
     addCorsOptions(items);
-
 
     const singleItem = items.addResource('{id}')
     singleItem.addMethod('GET', lambdaFunctionIntegration);
@@ -108,27 +75,12 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
     helloApi.addMethod('POST', lambdaFunctionIntegration);
     addCorsOptions(helloApi);
 
-
-    // const item = items.addResource('{itemId}
-    // runtimeBlogAPI.root
-    //     .resourceForPath('items')
-    //     .addMethod('GET', new api.LambdaIntegration(lambdaRuntimeBlogAPIFunction));
-    //
-    // runtimeBlogAPI.root
-    //     .resourceForPath('items/{itemId}')
-    //     .addMethod('GET', new api.LambdaIntegration(lambdaRuntimeBlogAPIFunction));
-    //
-    // runtimeBlogAPI.root
-    //     .resourceForPath('hello')
-    //     .addMethod('POST', new api.LambdaIntegration(lambdaRuntimeBlogAPIFunction));
-
     new cdk.CfnOutput(this, 'HTTP API Url', {
       value: runtimeBlogAPI.url ?? 'Something went wrong with the deploy'
     });
 
-
   }
-}
+
 
 export function addCorsOptions(apiResource: IResource) {
   apiResource.addMethod('OPTIONS', new MockIntegration({
@@ -160,6 +112,3 @@ export function addCorsOptions(apiResource: IResource) {
     }]
   })
 }
-
-
-

@@ -65,9 +65,11 @@ async function getItem(id) {
 }
 
 async function hello() {
-    return  buildResponse(200, {message: `Hello`});
+    let res = {
+        message: 'Hello'
+    };
+    return res.message;
 }
-
 
 const buildResponse = (statusCode, body) => {
     return {
