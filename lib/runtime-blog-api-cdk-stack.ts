@@ -20,29 +20,29 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
         type: dynamodb.AttributeType.STRING
       },
       tableName: 'rtb-case-studies',
-      removalPolicy: RemovalPolicy.DESTROY, // change for production to preserve db
+      removalPolicy: RemovalPolicy.RETAIN, // change for production to preserve db
     });
 
     const nodejsFunctionProps: NodejsFunctionProps = {
-        bundling: {
-          externalModules: [
-            'aws-sdk',
-          ],
-        },
-        depsLockFilePath: join(__dirname, '../package-lock.json'),
-          environment: {
-          PRIMARY_KEY: 'itemId',
-          TABLE_NAME:runtimeBlogDB.tableName,
-    },
-    runtime: Runtime.NODEJS_16_X,
-  }
+      bundling: {
+        externalModules: [
+          'aws-sdk',
+        ],
+      },
+      depsLockFilePath: join(__dirname, '../package-lock.json'),
+      environment: {
+        PRIMARY_KEY: 'itemId',
+        TABLE_NAME: runtimeBlogDB.tableName,
+      },
+      runtime: Runtime.NODEJS_16_X,
+    }
     // create a lambda function that access the dynamodb table above and has permissions to read, write, update and delete
     const lambdaRTBFunction = new NodejsFunction(this, 'handler', {
       entry: join(__dirname, '../functions', 'lambdaHandler.js'),
       ...nodejsFunctionProps,
     });
 
-  // attach read write policy
+    // attach read write policy
     // one handler
     runtimeBlogDB.grantReadWriteData(lambdaRTBFunction);
 
@@ -57,29 +57,53 @@ export class RuntimeBlogApiCdkStack extends cdk.Stack {
 
     // create an api gateway that uses the lambda handler above as a method to GET and GET by itemId
     const runtimeBlogAPI = new api.RestApi(this, 'rtbAPI', {
-      restApiName: 'rtb-items-service'
+      restApiName: 'rtb-items-service',
+      description: 'AWS CDK IaC for API Gateway, DynamoDB with Lambda Proxy integration',
+      deployOptions: {
+        stageName: 'prod',
+      },
       // if you want to manage binary types, uncomment the following
       // binaryMediaTypes; ["*/*"],
     });
 
     //attach the integration(s) to the api
+    const rootMethod = runtimeBlogAPI.root.addMethod(
+        'ANY',
+        lambdaFunctionIntegration
+    );
+   // root.addMethod('ANY', lambdaFunctionIntegration);
+    addCorsOptions(runtimeBlogAPI.root);
+
     const items = runtimeBlogAPI.root.addResource('items');
-    items.addMethod('GET', lambdaFunctionIntegration);
+    items.addMethod('ANY', lambdaFunctionIntegration);
     addCorsOptions(items);
 
-    const singleItem = items.addResource('{id}')
-    singleItem.addMethod('GET', lambdaFunctionIntegration);
-    addCorsOptions(singleItem);
+    // const singleItem = items.addResource('{proxy+}')
+    // singleItem.addMethod('GET', lambdaFunctionIntegration);
+    // addCorsOptions(singleItem);
 
-    const helloApi = runtimeBlogAPI.root.addResource('hello');
-    helloApi.addMethod('POST', lambdaFunctionIntegration);
-    addCorsOptions(helloApi);
+    const proxy = items.addProxy({
+      anyMethod: true,
+      defaultMethodOptions: {
+        authorizationType: api.AuthorizationType.NONE,
+        requestParameters: {
+          'method.request.path.proxy': true
+        }
+      }
+    });
+    proxy.addMethod('GET', lambdaFunctionIntegration);
+    addCorsOptions(proxy);
+
+    // const helloApi = root.addResource('hello');
+    // helloApi.addMethod('POST', lambdaFunctionIntegration);
+    // addCorsOptions(helloApi);
 
     new cdk.CfnOutput(this, 'HTTP API Url', {
       value: runtimeBlogAPI.url ?? 'Something went wrong with the deploy'
     });
 
   }
+}
 
 
 export function addCorsOptions(apiResource: IResource) {
@@ -91,24 +115,23 @@ export function addCorsOptions(apiResource: IResource) {
       responseParameters: {
         'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
         'method.response.header.Access-Control-Allow-Origin': "'*'",
-        'method.response.header.Access-Control-Allow-Credentials': "'false'",
         'method.response.header.Access-Control-Allow-Methods': "'OPTIONS,GET,PUT,POST,DELETE'",
       },
     }],
-    // In case you want to use binary media types, comment out the following line
-    passthroughBehavior: PassthroughBehavior.NEVER,
-    requestTemplates: {
-      "application/json": "{\"statusCode\": 200}"
-    },
-  }), {
-    methodResponses: [{
-      statusCode: '200',
-      responseParameters: {
-        'method.response.header.Access-Control-Allow-Headers': true,
-        'method.response.header.Access-Control-Allow-Methods': true,
-        'method.response.header.Access-Control-Allow-Credentials': true,
-        'method.response.header.Access-Control-Allow-Origin': true,
+      // In case you want to use binary media types, comment out the following line
+      passthroughBehavior: PassthroughBehavior.WHEN_NO_MATCH,
+      requestTemplates: {
+        "application/json": "{\"statusCode\": 200}"
       },
+
+  }), {
+      methodResponses: [{
+        statusCode: '200',
+        responseParameters: {
+          'method.response.header.Access-Control-Allow-Headers': true,
+          'method.response.header.Access-Control-Allow-Methods': true,
+          'method.response.header.Access-Control-Allow-Origin': true,
+        },
     }]
   })
 }
