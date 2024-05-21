@@ -1,5 +1,6 @@
 const AWS = require('aws-sdk');
 AWS.config.update({region: 'us-east-1'});
+import { v4 as uuidv4 } from 'uuid';
 
 // create a new aws dynamodb document client
 const dynamodb = new AWS.DynamoDB.DocumentClient();
@@ -7,6 +8,9 @@ const dynamodbTableName = "rtb-case-studies";
 const itemsPath = "/items";
 const itemPath = "/items/{proxy+}";
 const helloapi = "/hello";
+
+const RESERVED_RESPONSE = `Error: You're using AWS reserved keywords as attributes`
+const DYNAMODB_EXECUTION_ERROR = `Error: Execution update, caused a Dynamodb error, please take a look at your CloudWatch Logs.`;
 
 
 exports.handler = async function (event) {
@@ -30,9 +34,9 @@ exports.handler = async function (event) {
             console.log('[handler] switch: GET && ', event.path);
             response = await getItem(event.pathParameters.proxy);
             break;
-        case event.httpMethod === 'POST' && event.path === helloapi:
+        case event.httpMethod === 'POST' && event.path === itemsPath:
             console.log('[handler] switch: POST && ', event.path)
-            response = await hello();
+            response = await createItem();
             break;
         default:
             response = buildResponse(404, '404 Not Found');
@@ -65,6 +69,26 @@ async function getItem(id) {
         (error) => {
             console.error('error: ', error);
         });
+}
+async function createItem(event) {
+    if (!event.body) {
+        return { statusCode: 400, body: 'invalid request, you are missing the parameter body' };
+    }
+    const item = typeof event.body == 'object' ? event.body : JSON.parse(event.body);
+    item['itemId'] = uuidv4();
+    const params = {
+        TableName: dynamodbTableName,
+        Item: item
+    };
+
+    try {
+        await dynamodb.put(params);
+        return { statusCode: 201, body: '' };
+    } catch (dbError) {
+        const errorResponse = dbError.code === 'ValidationException' && dbError.message.includes('reserved keyword') ?
+            RESERVED_RESPONSE : DYNAMODB_EXECUTION_ERROR;
+        return { statusCode: 500, body: errorResponse };
+    }
 }
 
 async function hello() {
