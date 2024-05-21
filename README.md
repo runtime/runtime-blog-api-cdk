@@ -61,12 +61,9 @@ run locally and/or deploy to aws
 
 
 ## USE
-#### hello api
-https://9dvbmeoem1.execute-api.us-east-1.amazonaws.com/prod/hello
+
 
 ####  prod stage
-API currently only supports GET items and GET item/id
-https://9dvbmeoem1.execute-api.us-east-1.amazonaws.com/prod/items
-https://9dvbmeoem1.execute-api.us-east-1.amazonaws.com/prod/items/1
+current deploy is from branch: add-post-items
 
 
