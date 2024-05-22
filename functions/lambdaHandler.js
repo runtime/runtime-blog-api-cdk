@@ -1,12 +1,16 @@
 const AWS = require('aws-sdk');
 AWS.config.update({region: 'us-east-1'});
+//const {"v4": uuidv4} = require('uuid');
 
 // create a new aws dynamodb document client
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const dynamodbTableName = "rtb-case-studies";
 const itemsPath = "/items";
 const itemPath = "/items/{proxy+}";
-const helloapi = "/hello";
+//const helloapi = "/hello";
+
+const RESERVED_RESPONSE = `Error: You're using AWS reserved keywords as attributes`
+const DYNAMODB_EXECUTION_ERROR = `Error: Execution update, caused a Dynamodb error, please take a look at your CloudWatch Logs.`;
 
 
 exports.handler = async function (event) {
@@ -30,9 +34,9 @@ exports.handler = async function (event) {
             console.log('[handler] switch: GET && ', event.path);
             response = await getItem(event.pathParameters.proxy);
             break;
-        case event.httpMethod === 'POST' && event.path === helloapi:
+        case event.httpMethod === 'POST' && event.path === itemsPath:
             console.log('[handler] switch: POST && ', event.path)
-            response = await hello();
+            response = await createItem(event);
             break;
         default:
             response = buildResponse(404, '404 Not Found');
@@ -66,6 +70,37 @@ async function getItem(id) {
             console.error('error: ', error);
         });
 }
+async function createItem(event) {
+    let body;
+    console.log('[createItem] event: ', event);
+    //return (200, 'success');
+
+    let requestJSON = JSON.parse(event.body);
+    return dynamodb.put({
+            TableName: dynamodbTableName,
+            Item: {
+                itemId: requestJSON.itemId,
+                title: requestJSON.title,
+                client: requestJSON.client,
+                description: requestJSON.description,
+                media: requestJSON.media,
+                subtitle: requestJSON.subtitle,
+                tags: requestJSON.tags
+            },
+        }
+    ).promise().then(response => {
+            console.log('[createItem] dynamodb.put(params): ', response)
+            return response;
+        },
+        (error) => {
+            console.error('error: ', error);
+        });
+    //body = `Put item ${requestJSON.itemId}`;
+}
+
+
+
+
 
 async function hello() {
     console.log('[hello]')
