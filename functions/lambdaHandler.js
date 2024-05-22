@@ -89,8 +89,11 @@ async function createItem(event) {
             },
         }
     ).promise().then(response => {
-            console.log('[createItem] dynamodb.put(params): ', response)
-            return response;
+            console.log('[createItem] response.$response: ', response.$response.httpResponse.headers.date)
+            let statusCode = response.$response.httpResponse.statusCode;
+            let statusMessage = response.$response.httpResponse.statusMessage;
+            let res = String(statusCode + ' ' + statusMessage);
+            return res;
         },
         (error) => {
             console.error('error: ', error);
@@ -104,8 +107,8 @@ async function createItem(event) {
 
 async function hello() {
     console.log('[hello]')
-    const response = 'Hello, Runtime Blog API!'
-    return response;
+    const res = 'Hello, Runtime Blog API!'
+    return res;
 }
 
 
